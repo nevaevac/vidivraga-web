@@ -95,16 +95,16 @@
   import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
   import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-  // Forced cache update to v5
-  const MODEL_URL = 'fridge.glb?v=5';
+  // Forced cache update to v6
+  const MODEL_URL = 'fridge.glb?v=6';
 
   const container = document.getElementById('scene');
   const scene = new THREE.Scene();
 
   const aspect = container.clientWidth / container.clientHeight;
   
-  // FIX 1: A larger viewSize gives the camera a taller "ceiling" so nothing gets cut off
-  const viewSize = 4.5; 
+  // FIX 1: Make the camera's "invisible box" much taller so it NEVER cuts off the top/bottom
+  const viewSize = 8.0; 
   
   const camera = new THREE.OrthographicCamera(
     -viewSize * aspect / 2, 
@@ -139,16 +139,13 @@
     
     fridge.rotation.set(0, 0, 0); 
     
-    // FIX 2: Moved closer to center (0.25) and shifted down slightly (-0.4)
-    fridge.position.set(0.25, -0.4, 0);
-    
-    // FIX 3: Scale the model up directly so it becomes massive!
-    fridge.scale.set(2.2, 2.2, 2.2);
+    // FIX 2: Scale it up massively to match the huge camera box
+    fridge.scale.set(3.8, 3.8, 3.8);
 
     topDoor = fridge.getObjectByName('TopDoor');
     bottomDoor = fridge.getObjectByName('BottomDoor');
 
-    // Extra shiny Chrome
+    // Make it extra shiny Chrome
     fridge.traverse((child) => {
       if (child.isMesh && child.material) { 
         child.material.metalness = 1.0;     
@@ -205,10 +202,10 @@
     
     if (window.innerWidth <= 900) {
       // Mobile positioning
-      if (fridge) fridge.position.set(0, -0.4, 0);
+      if (fridge) fridge.position.set(0, -0.6, 0);
     } else {
-      // Desktop positioning
-      if (fridge) fridge.position.set(0.25, -0.4, 0);
+      // FIX 3: Move closer to the text center block (X = 0.5) and down slightly (Y = -0.6)
+      if (fridge) fridge.position.set(0.5, -0.6, 0);
     }
   }
   window.addEventListener('resize', updateLayout);
@@ -222,6 +219,3 @@
   }
   animate();
 </script>
-</script>
-</body>
-</html>
