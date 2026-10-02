@@ -95,15 +95,14 @@
   import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
   import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-  // Force cache update
-  const MODEL_URL = 'fridge.glb?v=8';
+  // Force cache update to v9
+  const MODEL_URL = 'fridge.glb?v=9';
 
   const container = document.getElementById('scene');
   const scene = new THREE.Scene();
 
-  // FIX 1: Use PerspectiveCamera with low FOV (20). It looks perfectly flat but NEVER cuts off!
   const camera = new THREE.PerspectiveCamera(20, container.clientWidth / container.clientHeight, 0.1, 1000);
-  camera.position.set(0, 0, 30); // Pull the camera safely back
+  camera.position.set(0, 0, 30); 
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -112,7 +111,6 @@
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   container.appendChild(renderer.domElement);
 
-  // FIX 2: Add real lights so the fridge is never black
   scene.add(new THREE.AmbientLight(0xffffff, 2.0)); 
   const light1 = new THREE.DirectionalLight(0xffffff, 3.0);
   light1.position.set(5, 10, 7);
@@ -121,7 +119,6 @@
   light2.position.set(-5, 0, 5);
   scene.add(light2);
 
-  // Add the reflection studio
   const pmremGenerator = new THREE.PMREMGenerator(renderer);
   scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
@@ -134,19 +131,20 @@
     
     fridge.rotation.set(0, 0, 0); 
     
-    // Scale and position for the new camera
-    fridge.scale.set(2.4, 2.4, 2.4);
-    fridge.position.set(1.5, -2.5, 0);
+    // FIX 1: Make it HUGE! (Increased from 2.4 to 3.8)
+    fridge.scale.set(3.8, 3.8, 3.8);
+    
+    // Initial position setup
+    fridge.position.set(0.6, -3.8, 0);
 
     topDoor = fridge.getObjectByName('TopDoor');
     bottomDoor = fridge.getObjectByName('BottomDoor');
 
-    // FIX 3: Completely overwrite Blender's materials with a fresh Chrome material
     const chromeMaterial = new THREE.MeshStandardMaterial({
-      color: 0xeeeeee,      // Silver/White base
-      metalness: 1.0,       // 100% Metal
-      roughness: 0.15,      // Very smooth and shiny
-      envMapIntensity: 2.0  // Strong reflections
+      color: 0xeeeeee,      
+      metalness: 1.0,       
+      roughness: 0.15,      
+      envMapIntensity: 2.0  
     });
 
     fridge.traverse((child) => {
@@ -192,11 +190,11 @@
     renderer.setSize(container.clientWidth, container.clientHeight);
     
     if (window.innerWidth <= 900) {
-      // Mobile
-      if (fridge) fridge.position.set(0, -2.5, 0);
+      // Mobile: Centered, moved down to accommodate the massive scale
+      if (fridge) fridge.position.set(0, -3.8, 0);
     } else {
-      // Desktop
-      if (fridge) fridge.position.set(1.5, -2.5, 0);
+      // FIX 2: Desktop: Pushed much closer to the text (0.6 instead of 1.5)
+      if (fridge) fridge.position.set(0.6, -3.8, 0);
     }
   }
   window.addEventListener('resize', updateLayout);
