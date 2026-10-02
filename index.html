@@ -95,8 +95,8 @@
   import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
   import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-  // Force cache update to v10
-  const MODEL_URL = 'fridge.glb?v=10';
+  // Force cache update to v11
+  const MODEL_URL = 'fridge.glb?v=11';
 
   const container = document.getElementById('scene');
   const scene = new THREE.Scene();
@@ -111,11 +111,12 @@
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   container.appendChild(renderer.domElement);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 2.0)); 
-  const light1 = new THREE.DirectionalLight(0xffffff, 3.0);
+  // Softened lighting to match brushed steel
+  scene.add(new THREE.AmbientLight(0xffffff, 1.5)); 
+  const light1 = new THREE.DirectionalLight(0xffffff, 2.0);
   light1.position.set(5, 10, 7);
   scene.add(light1);
-  const light2 = new THREE.DirectionalLight(0xffffff, 1.5);
+  const light2 = new THREE.DirectionalLight(0xffffff, 1.0);
   light2.position.set(-5, 0, 5);
   scene.add(light2);
 
@@ -133,18 +134,30 @@
     fridge.scale.set(3.8, 3.8, 3.8);
     fridge.position.set(0.6, -3.8, 0);
 
-    // FIX 1: Super forgiving name search that catches Blender's hidden renaming
+    // FIX 1: Exact Brushed Steel Material Match
+    const brushedSteel = new THREE.MeshPhysicalMaterial({
+      color: 0xa0a0a0,       // Deeper silver-gray, not pure white
+      metalness: 0.9,        // Highly metallic, but not 100%
+      roughness: 0.35,       // Cloudy, brushed reflection (higher than chrome)
+      clearcoat: 0.1,        // Slight clearcoat for that realistic appliance finish
+      envMapIntensity: 1.0   // Softer environment reflection
+    });
+
     fridge.traverse((child) => {
-      if (child.name) {
-        const lowerName = child.name.toLowerCase();
-        if (lowerName.includes('topdoor')) topDoor = child;
-        if (lowerName.includes('bottomdoor')) bottomDoor = child;
-      }
-      
-      // FIX 2: Restore YOUR original material from Blender, just making sure it reflects the lights!
-      if (child.isMesh && child.material) { 
-        child.material.envMapIntensity = 1.2; 
-        child.material.needsUpdate = true;
+      // Find the doors using position if the names are completely messed up
+      if (child.isMesh) {
+        // Apply the brushed steel material to the main body and doors
+        child.material = brushedSteel;
+        
+        child.geometry.computeBoundingBox();
+        const yCenter = (child.geometry.boundingBox.max.y + child.geometry.boundingBox.min.y) / 2;
+        
+        // If the object's origin is high up, it's the top door/shelves. If low, bottom door.
+        // We only assign it if it looks like a door (it can swing on Y)
+        if (child.parent === fridge) {
+           if (yCenter > 0) topDoor = child;
+           else bottomDoor = child;
+        }
       }
     });
   });
@@ -152,6 +165,7 @@
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
+  // FIX 2: Spatial Click Detection (No more relying on Blender names!)
   renderer.domElement.addEventListener('click', (event) => {
     if (!fridge) return;
     
@@ -164,12 +178,12 @@
     
     if (!hits.length) return;
     
-    let obj = hits[0].object;
-    while (obj) {
-      // Direct object matching ensures the click works no matter what the mesh is called
-      if (topDoor && obj === topDoor) { topOpen = !topOpen; return; }
-      if (bottomDoor && obj === bottomDoor) { bottomOpen = !bottomOpen; return; }
-      obj = obj.parent;
+    // Check where they clicked on the screen vertically!
+    // If they clicked the top half of the canvas, open the top door.
+    if (mouse.y > 0.1) {
+      topOpen = !topOpen;
+    } else {
+      bottomOpen = !bottomOpen;
     }
   });
 
