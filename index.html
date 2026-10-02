@@ -95,16 +95,16 @@
   import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
   import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-  // Forced cache update
-  const MODEL_URL = 'fridge.glb?v=4';
+  // Forced cache update to v5
+  const MODEL_URL = 'fridge.glb?v=5';
 
   const container = document.getElementById('scene');
   const scene = new THREE.Scene();
 
   const aspect = container.clientWidth / container.clientHeight;
   
-  // FIX 1: Cut the viewSize in half to make the fridge TWICE as big
-  const viewSize = 1.9; 
+  // FIX 1: A larger viewSize gives the camera a taller "ceiling" so nothing gets cut off
+  const viewSize = 4.5; 
   
   const camera = new THREE.OrthographicCamera(
     -viewSize * aspect / 2, 
@@ -139,14 +139,16 @@
     
     fridge.rotation.set(0, 0, 0); 
     
-    // FIX 2: Moved X from 1.2 to 0.4 (closer to center) and adjusted Y slightly
-    fridge.position.set(0.4, -0.2, 0);
-    fridge.scale.set(1, 1, 1);
+    // FIX 2: Moved closer to center (0.25) and shifted down slightly (-0.4)
+    fridge.position.set(0.25, -0.4, 0);
+    
+    // FIX 3: Scale the model up directly so it becomes massive!
+    fridge.scale.set(2.2, 2.2, 2.2);
 
     topDoor = fridge.getObjectByName('TopDoor');
     bottomDoor = fridge.getObjectByName('BottomDoor');
 
-    // Make it extra shiny Chrome
+    // Extra shiny Chrome
     fridge.traverse((child) => {
       if (child.isMesh && child.material) { 
         child.material.metalness = 1.0;     
@@ -202,11 +204,11 @@
     renderer.setSize(w, h);
     
     if (window.innerWidth <= 900) {
-      // Mobile positioning (perfectly centered)
-      if (fridge) fridge.position.set(0, -0.2, 0);
+      // Mobile positioning
+      if (fridge) fridge.position.set(0, -0.4, 0);
     } else {
-      // Desktop positioning (pushed left to 0.4)
-      if (fridge) fridge.position.set(0.4, -0.2, 0);
+      // Desktop positioning
+      if (fridge) fridge.position.set(0.25, -0.4, 0);
     }
   }
   window.addEventListener('resize', updateLayout);
@@ -219,6 +221,7 @@
     renderer.render(scene, camera);
   }
   animate();
+</script>
 </script>
 </body>
 </html>
