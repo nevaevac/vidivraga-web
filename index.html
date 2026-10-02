@@ -95,8 +95,8 @@
   import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
   import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-  // Force cache update to v9
-  const MODEL_URL = 'fridge.glb?v=9';
+  // Force cache update to v10
+  const MODEL_URL = 'fridge.glb?v=10';
 
   const container = document.getElementById('scene');
   const scene = new THREE.Scene();
@@ -130,26 +130,21 @@
     scene.add(fridge);
     
     fridge.rotation.set(0, 0, 0); 
-    
-    // FIX 1: Make it HUGE! (Increased from 2.4 to 3.8)
     fridge.scale.set(3.8, 3.8, 3.8);
-    
-    // Initial position setup
     fridge.position.set(0.6, -3.8, 0);
 
-    topDoor = fridge.getObjectByName('TopDoor');
-    bottomDoor = fridge.getObjectByName('BottomDoor');
-
-    const chromeMaterial = new THREE.MeshStandardMaterial({
-      color: 0xeeeeee,      
-      metalness: 1.0,       
-      roughness: 0.15,      
-      envMapIntensity: 2.0  
-    });
-
+    // FIX 1: Super forgiving name search that catches Blender's hidden renaming
     fridge.traverse((child) => {
-      if (child.isMesh) { 
-        child.material = chromeMaterial;
+      if (child.name) {
+        const lowerName = child.name.toLowerCase();
+        if (lowerName.includes('topdoor')) topDoor = child;
+        if (lowerName.includes('bottomdoor')) bottomDoor = child;
+      }
+      
+      // FIX 2: Restore YOUR original material from Blender, just making sure it reflects the lights!
+      if (child.isMesh && child.material) { 
+        child.material.envMapIntensity = 1.2; 
+        child.material.needsUpdate = true;
       }
     });
   });
@@ -171,8 +166,9 @@
     
     let obj = hits[0].object;
     while (obj) {
-      if (obj.name === 'TopDoor') { topOpen = !topOpen; return; }
-      if (obj.name === 'BottomDoor') { bottomOpen = !bottomOpen; return; }
+      // Direct object matching ensures the click works no matter what the mesh is called
+      if (topDoor && obj === topDoor) { topOpen = !topOpen; return; }
+      if (bottomDoor && obj === bottomDoor) { bottomOpen = !bottomOpen; return; }
       obj = obj.parent;
     }
   });
@@ -190,10 +186,8 @@
     renderer.setSize(container.clientWidth, container.clientHeight);
     
     if (window.innerWidth <= 900) {
-      // Mobile: Centered, moved down to accommodate the massive scale
       if (fridge) fridge.position.set(0, -3.8, 0);
     } else {
-      // FIX 2: Desktop: Pushed much closer to the text (0.6 instead of 1.5)
       if (fridge) fridge.position.set(0.6, -3.8, 0);
     }
   }
