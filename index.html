@@ -93,10 +93,9 @@
 <script type="module">
   import * as THREE from 'three';
   import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-  import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-  // Force cache update to v11
-  const MODEL_URL = 'fridge.glb?v=11';
+  // Force cache update to v13
+  const MODEL_URL = 'fridge.glb?v=13';
 
   const container = document.getElementById('scene');
   const scene = new THREE.Scene();
@@ -108,20 +107,16 @@
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace; 
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
   container.appendChild(renderer.domElement);
 
-  // Softened lighting to match brushed steel
-  scene.add(new THREE.AmbientLight(0xffffff, 1.5)); 
+  // Soft appliance lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 2.8)); 
   const light1 = new THREE.DirectionalLight(0xffffff, 2.0);
-  light1.position.set(5, 10, 7);
+  light1.position.set(5, 5, 5);
   scene.add(light1);
   const light2 = new THREE.DirectionalLight(0xffffff, 1.0);
-  light2.position.set(-5, 0, 5);
+  light2.position.set(-5, 5, 5);
   scene.add(light2);
-
-  const pmremGenerator = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
   let fridge = null, topDoor = null, bottomDoor = null;
   let topOpen = false, bottomOpen = false;
@@ -134,30 +129,25 @@
     fridge.scale.set(3.8, 3.8, 3.8);
     fridge.position.set(0.6, -3.8, 0);
 
-    // FIX 1: Exact Brushed Steel Material Match
-    const brushedSteel = new THREE.MeshPhysicalMaterial({
-      color: 0xa0a0a0,       // Deeper silver-gray, not pure white
-      metalness: 0.9,        // Highly metallic, but not 100%
-      roughness: 0.35,       // Cloudy, brushed reflection (higher than chrome)
-      clearcoat: 0.1,        // Slight clearcoat for that realistic appliance finish
-      envMapIntensity: 1.0   // Softer environment reflection
+    const applianceSilver = new THREE.MeshPhongMaterial({
+      color: 0x9fa1a3,       
+      specular: 0x333333,    
+      shininess: 30          
     });
 
     fridge.traverse((child) => {
-      // Find the doors using position if the names are completely messed up
+      // 1. Paint everything silver
       if (child.isMesh) {
-        // Apply the brushed steel material to the main body and doors
-        child.material = brushedSteel;
-        
-        child.geometry.computeBoundingBox();
-        const yCenter = (child.geometry.boundingBox.max.y + child.geometry.boundingBox.min.y) / 2;
-        
-        // If the object's origin is high up, it's the top door/shelves. If low, bottom door.
-        // We only assign it if it looks like a door (it can swing on Y)
-        if (child.parent === fridge) {
-           if (yCenter > 0) topDoor = child;
-           else bottomDoor = child;
-        }
+        child.material = applianceSilver;
+        child.material.needsUpdate = true;
+      }
+      
+      // 2. Smart Door Finder: Only assign the door if we haven't found it yet! 
+      // This stops shelves from overwriting the main door.
+      if (child.name) {
+        const name = child.name.toLowerCase();
+        if (name.includes('topdoor') && !topDoor) topDoor = child;
+        if (name.includes('bottomdoor') && !bottomDoor) bottomDoor = child;
       }
     });
   });
@@ -165,25 +155,29 @@
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
-  // FIX 2: Spatial Click Detection (No more relying on Blender names!)
   renderer.domElement.addEventListener('click', (event) => {
     if (!fridge) return;
     
     const rect = renderer.domElement.getBoundingClientRect();
+    
     mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     
     raycaster.setFromCamera(mouse, camera);
-    const hits = raycaster.intersectObject(fridge, true);
     
-    if (!hits.length) return;
+    // Check against everything in the entire scene to guarantee a hit
+    const hits = raycaster.intersectObjects(scene.children, true);
     
-    // Check where they clicked on the screen vertically!
-    // If they clicked the top half of the canvas, open the top door.
-    if (mouse.y > 0.1) {
-      topOpen = !topOpen;
-    } else {
-      bottomOpen = !bottomOpen;
+    if (hits.length > 0) {
+      // 3. Instead of checking screen coordinates, check exactly where the laser hit the 3D fridge!
+      // The fridge sits at Y = -3.8, so the split between the doors is right around -3.5
+      const hitY = hits[0].point.y;
+      
+      if (hitY > -3.5) {
+        topOpen = !topOpen; // Clicked above the middle line
+      } else {
+        bottomOpen = !bottomOpen; // Clicked below the middle line
+      }
     }
   });
 
@@ -210,9 +204,11 @@
 
   function animate() {
     requestAnimationFrame(animate);
+    // Note: If the doors swing inward, change -1.8 to 1.8!
     moveDoor(topDoor, topOpen, -1.8);
     moveDoor(bottomDoor, bottomOpen, -1.8);
     renderer.render(scene, camera);
   }
   animate();
 </script>
+
