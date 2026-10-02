@@ -93,44 +93,42 @@
 <script type="module">
   import * as THREE from 'three';
   import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+  import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-  const MODEL_URL = 'fridge.glb?v=2';
+  // Forced cache update
+  const MODEL_URL = 'fridge.glb?v=4';
 
   const container = document.getElementById('scene');
   const scene = new THREE.Scene();
 
-  // FIX 1: Change to OrthographicCamera to match your flat design perfectly,
-  // and calculate the aspect ratio so the fridge NEVER gets squeezed or stretched!
   const aspect = container.clientWidth / container.clientHeight;
-  const viewSize = 5; // This controls how zoomed in the camera is. Increase to zoom out.
+  
+  // FIX 1: Cut the viewSize in half to make the fridge TWICE as big
+  const viewSize = 1.9; 
+  
   const camera = new THREE.OrthographicCamera(
     -viewSize * aspect / 2, 
     viewSize * aspect / 2, 
     viewSize / 2, 
     -viewSize / 2, 
     0.1, 
-    100
+    1000 
   );
   
-  // Move camera back so it can see the whole fridge
-  camera.position.set(0, 0, 10);
+  camera.position.set(0, 0, 50); 
   camera.lookAt(0, 0, 0);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
-  // Important for metallic textures to not look pure white:
   renderer.outputColorSpace = THREE.SRGBColorSpace; 
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
   container.appendChild(renderer.domElement);
 
-  // Lighting adjustments so metal looks like metal
-  const ambient = new THREE.AmbientLight(0xffffff, 1.5);
-  scene.add(ambient);
-  const dirLight = new THREE.DirectionalLight(0xffffff, 2.0); 
-  dirLight.position.set(5, 5, 5); 
-  scene.add(dirLight);
+  // Chrome Reflection Studio
+  const pmremGenerator = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
   let fridge = null, topDoor = null, bottomDoor = null;
   let topOpen = false, bottomOpen = false;
@@ -139,15 +137,25 @@
     fridge = gltf.scene;
     scene.add(fridge);
     
-    // FIX 2: Reset the rotation so the door hinges are on the left side
     fridge.rotation.set(0, 0, 0); 
     
-    // Position it slightly to the right and down
-    fridge.position.set(1.2, -0.5, 0);
+    // FIX 2: Moved X from 1.2 to 0.4 (closer to center) and adjusted Y slightly
+    fridge.position.set(0.4, -0.2, 0);
     fridge.scale.set(1, 1, 1);
 
     topDoor = fridge.getObjectByName('TopDoor');
     bottomDoor = fridge.getObjectByName('BottomDoor');
+
+    // Make it extra shiny Chrome
+    fridge.traverse((child) => {
+      if (child.isMesh && child.material) { 
+        child.material.metalness = 1.0;     
+        child.material.roughness = 0.1; 
+        child.material.color.set(0xffffff); 
+        child.material.envMapIntensity = 1.5; 
+        child.material.needsUpdate = true;
+      }
+    });
   });
 
   const raycaster = new THREE.Raycaster();
@@ -155,12 +163,14 @@
 
   renderer.domElement.addEventListener('click', (event) => {
     if (!fridge) return;
+    
     const rect = renderer.domElement.getBoundingClientRect();
     mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     
     raycaster.setFromCamera(mouse, camera);
     const hits = raycaster.intersectObject(fridge, true);
+    
     if (!hits.length) return;
     
     let obj = hits[0].object;
@@ -171,10 +181,8 @@
     }
   });
 
-  // FIX 3: Make the door swing open like a real fridge (on the Y axis)
   function moveDoor(door, isOpen, openAngle) {
     if (door) {
-      // Smoothly transition between closed (0) and open (openAngle)
       const target = isOpen ? openAngle : 0;
       door.rotation.y += (target - door.rotation.y) * 0.1;
     }
@@ -185,7 +193,6 @@
     const h = container.clientHeight;
     const newAspect = w / h;
 
-    // Update Orthographic camera so it doesn't stretch when resizing window
     camera.left = -viewSize * newAspect / 2;
     camera.right = viewSize * newAspect / 2;
     camera.top = viewSize / 2;
@@ -195,9 +202,11 @@
     renderer.setSize(w, h);
     
     if (window.innerWidth <= 900) {
-      if (fridge) { fridge.position.set(0, -0.5, 0); }
+      // Mobile positioning (perfectly centered)
+      if (fridge) fridge.position.set(0, -0.2, 0);
     } else {
-      if (fridge) { fridge.position.set(1.2, -0.5, 0); }
+      // Desktop positioning (pushed left to 0.4)
+      if (fridge) fridge.position.set(0.4, -0.2, 0);
     }
   }
   window.addEventListener('resize', updateLayout);
@@ -205,7 +214,6 @@
 
   function animate() {
     requestAnimationFrame(animate);
-    // When open, swing -90 degrees (which is roughly -1.5 in radians)
     moveDoor(topDoor, topOpen, -1.5);
     moveDoor(bottomDoor, bottomOpen, -1.5);
     renderer.render(scene, camera);
