@@ -95,16 +95,16 @@
   import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
   import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-  // Forced cache update to v6
-  const MODEL_URL = 'fridge.glb?v=6';
+  // Forced cache update to v7
+  const MODEL_URL = 'fridge.glb?v=7';
 
   const container = document.getElementById('scene');
   const scene = new THREE.Scene();
 
   const aspect = container.clientWidth / container.clientHeight;
   
-  // FIX 1: Make the camera's "invisible box" much taller so it NEVER cuts off the top/bottom
-  const viewSize = 8.0; 
+  // FIX 1: A massive camera box so it is literally impossible to clip the fridge
+  const viewSize = 12.0; 
   
   const camera = new THREE.OrthographicCamera(
     -viewSize * aspect / 2, 
@@ -112,10 +112,11 @@
     viewSize / 2, 
     -viewSize / 2, 
     0.1, 
-    1000 
+    2000 // Huge depth so the fridge never gets cut off front-to-back
   );
   
-  camera.position.set(0, 0, 50); 
+  // FIX 2: Pull the camera VERY far back so the click-laser works perfectly
+  camera.position.set(0, 0, 500); 
   camera.lookAt(0, 0, 0);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -139,8 +140,8 @@
     
     fridge.rotation.set(0, 0, 0); 
     
-    // FIX 2: Scale it up massively to match the huge camera box
-    fridge.scale.set(3.8, 3.8, 3.8);
+    // Scale the fridge up to match the huge camera box
+    fridge.scale.set(5.0, 5.0, 5.0);
 
     topDoor = fridge.getObjectByName('TopDoor');
     bottomDoor = fridge.getObjectByName('BottomDoor');
@@ -176,7 +177,7 @@
     while (obj) {
       if (obj.name === 'TopDoor') { topOpen = !topOpen; return; }
       if (obj.name === 'BottomDoor') { bottomOpen = !bottomOpen; return; }
-      obj = obj.parent;
+      obj = obj.parent; // Keep looking up the chain in case they clicked a shelf!
     }
   });
 
@@ -202,10 +203,10 @@
     
     if (window.innerWidth <= 900) {
       // Mobile positioning
-      if (fridge) fridge.position.set(0, -0.6, 0);
+      if (fridge) fridge.position.set(0, -0.5, 0);
     } else {
-      // FIX 3: Move closer to the text center block (X = 0.5) and down slightly (Y = -0.6)
-      if (fridge) fridge.position.set(0.5, -0.6, 0);
+      // FIX 3: Push it left (-1.5) so it sits closer to the text!
+      if (fridge) fridge.position.set(-1.5, -0.5, 0);
     }
   }
   window.addEventListener('resize', updateLayout);
