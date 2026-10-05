@@ -95,7 +95,7 @@
   import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
   import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-  const MODEL_URL = 'fridge.glb?v=18';
+  const MODEL_URL = 'https://nevaevac.github.io/vidivraga-web/fridge.glb?v=20';
 
   const container = document.getElementById('scene');
   const scene = new THREE.Scene();
@@ -104,77 +104,72 @@
     20,
     container.clientWidth / container.clientHeight,
     0.1,
-    1000
+    2000
   );
-  camera.position.set(0, 0, 30);
 
-  const renderer = new THREE.WebGLRenderer({
-    antialias: true,
-    alpha: true
-  });
-
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  renderer.toneMappingExposure = 1.1;
   container.appendChild(renderer.domElement);
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xb8b0a3, 2.4));
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xd9d1c7, 2.2));
 
-  const keyLight = new THREE.DirectionalLight(0xffffff, 3.2);
-  keyLight.position.set(5, 7, 8);
-  scene.add(keyLight);
+  const key = new THREE.DirectionalLight(0xffffff, 2.8);
+  key.position.set(5, 8, 9);
+  scene.add(key);
 
-  const sideLight = new THREE.DirectionalLight(0xffffff, 1.5);
-  sideLight.position.set(-6, 2, 6);
-  scene.add(sideLight);
+  const fill = new THREE.DirectionalLight(0xffffff, 1.2);
+  fill.position.set(-6, 2, 6);
+  scene.add(fill);
 
-  const pmremGenerator = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmremGenerator
-    .fromScene(new RoomEnvironment(), 0.04)
-    .texture;
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-  let fridge;
-  let topDoor;
-  let bottomDoor;
+  let fridge = null;
+  let topDoor = null;
+  let bottomDoor = null;
   let topOpen = false;
   let bottomOpen = false;
 
   const steel = new THREE.MeshPhysicalMaterial({
-    color: 0xc6c6c4,
-    metalness: 0.92,
-    roughness: 0.22,
-    envMapIntensity: 1.65,
-    clearcoat: 0.08,
-    clearcoatRoughness: 0.28
+    color: 0xc7c7c5,
+    metalness: 0.9,
+    roughness: 0.2,
+    envMapIntensity: 1.7,
+    clearcoat: 0.06,
+    clearcoatRoughness: 0.25
   });
 
-  function setFridgeLayout() {
-    if (!fridge) return;
+  function fitModelToView(object) {
+    object.updateMatrixWorld(true);
 
-    if (window.innerWidth <= 900) {
-      fridge.scale.set(2.15, 2.15, 2.15);
-      fridge.position.set(0, -2.05, 0);
-    } else {
-      fridge.scale.set(3.8, 3.8, 3.8);
-      fridge.position.set(0.6, -3.8, 0);
-    }
+    const box = new THREE.Box3().setFromObject(object);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const fov = camera.fov * (Math.PI / 180);
+    const cameraZ = Math.abs((maxDim / 2) / Math.tan(fov / 2)) * 1.35;
+
+    object.position.sub(center);
+    object.updateMatrixWorld(true);
+
+    camera.position.set(0.9, 0, cameraZ);
+    camera.near = Math.max(0.1, cameraZ / 100);
+    camera.far = cameraZ * 100;
+    camera.updateProjectionMatrix();
+    camera.lookAt(0.2, 0, 0);
   }
 
-  function findNamedObject(root, targetName) {
+  function findNamedObject(root, name) {
     let found = null;
-
-    root.traverse((item) => {
-      if (
-        !found &&
-        item.name &&
-        item.name.toLowerCase().includes(targetName.toLowerCase())
-      ) {
-        found = item;
+    root.traverse((obj) => {
+      if (!found && obj.name && obj.name.toLowerCase().includes(name.toLowerCase())) {
+        found = obj;
       }
     });
-
     return found;
   }
 
@@ -184,24 +179,27 @@
       fridge = gltf.scene;
       scene.add(fridge);
 
-      fridge.traverse((item) => {
-        if (!item.isMesh) return;
-
-        item.material = steel;
-        item.material.needsUpdate = true;
+      fridge.traverse((obj) => {
+        if (obj.isMesh) {
+          obj.material = steel;
+          obj.material.needsUpdate = true;
+          obj.frustumCulled = false;
+        }
       });
 
       topDoor = findNamedObject(fridge, 'topdoor');
       bottomDoor = findNamedObject(fridge, 'bottomdoor');
 
-      console.log('TopDoor:', topDoor);
-      console.log('BottomDoor:', bottomDoor);
+      console.log('Loaded fridge:', fridge);
+      console.log('Top door:', topDoor);
+      console.log('Bottom door:', bottomDoor);
 
-      setFridgeLayout();
+      fitModelToView(fridge);
     },
     undefined,
     (error) => {
-      console.error('Could not load fridge.glb:', error);
+      console.error('GLB load failed:', error);
+      alert('Model loaded path exists, but Three.js failed to render it. Check console.');
     }
   );
 
@@ -212,50 +210,42 @@
     if (!fridge) return;
 
     const rect = renderer.domElement.getBoundingClientRect();
-
     pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
     raycaster.setFromCamera(pointer, camera);
-
     const hits = raycaster.intersectObject(fridge, true);
     if (!hits.length) return;
 
-    const hit = hits[0];
-    const localHit = fridge.worldToLocal(hit.point.clone());
+    const hitPointLocal = fridge.worldToLocal(hits[0].point.clone());
 
-    if (localHit.y > 0) {
-      topOpen = !topOpen;
-    } else {
-      bottomOpen = !bottomOpen;
-    }
+    if (hitPointLocal.y > 0) topOpen = !topOpen;
+    else bottomOpen = !bottomOpen;
   });
 
   function animateDoor(door, open) {
     if (!door) return;
-
-    const targetRotation = open ? -1.55 : 0;
-    door.rotation.y += (targetRotation - door.rotation.y) * 0.09;
+    const target = open ? -1.55 : 0;
+    door.rotation.y += (target - door.rotation.y) * 0.1;
   }
 
   function resize() {
     camera.aspect = container.clientWidth / container.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(container.clientWidth, container.clientHeight);
-    setFridgeLayout();
+
+    if (fridge) fitModelToView(fridge);
   }
 
   window.addEventListener('resize', resize);
 
-  function render() {
-    requestAnimationFrame(render);
-
+  function tick() {
+    requestAnimationFrame(tick);
     animateDoor(topDoor, topOpen);
     animateDoor(bottomDoor, bottomOpen);
-
     renderer.render(scene, camera);
   }
 
-  render();
+  tick();
 </script>
 
