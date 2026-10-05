@@ -173,35 +173,49 @@
     return found;
   }
 
-  new GLTFLoader().load(
-    MODEL_URL,
-    (gltf) => {
-      fridge = gltf.scene;
-      scene.add(fridge);
+const loader = new GLTFLoader();
+loader.load(
+  'fridge.glb?v=20',
+  (gltf) => {
+    const fridge = gltf.scene;
+    scene.add(fridge);
 
-      fridge.traverse((obj) => {
-        if (obj.isMesh) {
-          obj.material = steel;
-          obj.material.needsUpdate = true;
-          obj.frustumCulled = false;
-        }
-      });
+    // Apply a clear neutral material to verify visibility
+    fridge.traverse((child) => {
+      if (child.isMesh) {
+        child.material = new THREE.MeshStandardMaterial({
+          color: 0xd9dfe5,
+          metalness: 0.55,
+          roughness: 0.32
+        });
+      }
+    });
 
-      topDoor = findNamedObject(fridge, 'topdoor');
-      bottomDoor = findNamedObject(fridge, 'bottomdoor');
+    // Calculate actual dimensions exported from Blender
+    const box = new THREE.Box3().setFromObject(fridge);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
 
-      console.log('Loaded fridge:', fridge);
-      console.log('Top door:', topDoor);
-      console.log('Bottom door:', bottomDoor);
+    // Print values to the console
+    console.log('FRIDGE LOADED', { size, center });
 
-      fitModelToView(fridge);
-    },
-    undefined,
-    (error) => {
-      console.error('GLB load failed:', error);
-      alert('Model loaded path exists, but Three.js failed to render it. Check console.');
+    // Center model precisely at origin (0, 0, 0)
+    fridge.position.sub(center);
+
+    // Adjust camera distance according to the model's actual size
+    const maxDim = Math.max(size.x, size.y, size.z);
+    camera.position.set(0, 0, maxDim * 2.5 || 5);
+    camera.lookAt(0, 0, 0);
+    if (typeof controls !== 'undefined' && controls) {
+      controls.target.set(0, 0, 0);
+      controls.update();
     }
-  );
+  },
+  undefined,
+  (error) => {
+    console.error('Error loading GLB:', error);
+  }
+);
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
