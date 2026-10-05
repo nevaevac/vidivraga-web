@@ -196,17 +196,18 @@ const MODEL_URL = './fridge.glb';
 const container = document.getElementById('scene');
 const scene = new THREE.Scene();
 
-const camera = new THREE.PerspectiveCamera(28, container.clientWidth / container.clientHeight, 0.1, 100);
+// Camera setup
+const camera = new THREE.PerspectiveCamera(30, container.clientWidth / container.clientHeight, 0.1, 100);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(container.clientWidth, container.clientHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.1;
+renderer.toneMappingExposure = 1.15;
 container.appendChild(renderer.domElement);
 
-// Clean lighting setup matching the photo's studio reflections
+// Lighting setup for stainless steel
 scene.add(new THREE.AmbientLight(0xffffff, 1.8));
 
 const key = new THREE.DirectionalLight(0xffffff, 2.4);
@@ -217,9 +218,9 @@ const softFill = new THREE.DirectionalLight(0xffeedd, 1.2);
 softFill.position.set(-4, 3, 4);
 scene.add(softFill);
 
-// Brushed stainless steel material matching the photo
+// Stainless steel material matching the photo
 const brushedSteel = new THREE.MeshStandardMaterial({
-  color: 0xcccccc,
+  color: 0xd4d8de,
   metalness: 0.85,
   roughness: 0.28
 });
@@ -232,58 +233,33 @@ let bottomOpen = false;
 
 const loader = new GLTFLoader();
 
-loader.load(
-  MODEL_URL,
-  (gltf) => {
-    fridge = gltf.scene;
+loader.load(MODEL_URL, (gltf) => {
+  fridge = gltf.scene;
 
-    // Center geometry so scale/rotation work reliably
-    const box = new THREE.Box3().setFromObject(fridge);
-    const center = box.getCenter(new THREE.Vector3());
-    fridge.position.sub(center);
+  // Center model origin
+  const box = new THREE.Box3().setFromObject(fridge);
+  const center = box.getCenter(new THREE.Vector3());
+  fridge.position.sub(center);
 
-    // Group wrapper to position to the right
-    const wrapper = new THREE.Group();
-    wrapper.add(fridge);
-    scene.add(wrapper);
+  // Apply stainless material and find doors
+  fridge.traverse((child) => {
+    if (child.isMesh) {
+      child.material = brushedSteel;
+    }
+    const name = child.name.toLowerCase();
+    if (name.includes('top') && (name.includes('door') || name.includes('vrata'))) topDoor = child;
+    if (name.includes('bottom') && (name.includes('door') || name.includes('vrata'))) bottomDoor = child;
+    if (child.name === 'TopDoor') topDoor = child;
+    if (child.name === 'BottomDoor') bottomDoor = child;
+  });
 
-    fridge.traverse((child) => {
-      if (child.isMesh) {
-        // Apply stainless steel look to body & doors
-        child.material = brushedSteel;
-      }
-      const name = child.name.toLowerCase();
-      if (name.includes('top') && (name.includes('door') || name.includes('vrata'))) {
-        topDoor = child;
-      } else if (name.includes('bottom') && (name.includes('door') || name.includes('vrata'))) {
-        bottomDoor = child;
-      } else if (child.name === 'TopDoor') {
-        topDoor = child;
-      } else if (child.name === 'BottomDoor') {
-        bottomDoor = child;
-      }
-    });
+  scene.add(fridge);
 
-    // Auto-fit to viewport and offset slightly to the right
-    const size = box.getSize(new THREE.Vector3());
-    const maxAxis = Math.max(size.x, size.y, size.z);
-    const scale = 2.4 / (maxAxis || 1);
-    wrapper.scale.setScalar(scale);
+  // Position and frame the model
+  layoutScene();
+});
 
-    // Shift to the right (x = 0.35) instead of dead-center
-    wrapper.position.set(0.35, -0.1, 0);
-
-    // Trigger an initial render
-    renderer.render(scene, camera);
-  },
-  undefined,
-  (error) => {
-    console.error('Error loading GLB:', error);
-    alert('Could not find fridge.glb. Ensure the file is pushed to GitHub in the same folder as index.html with the exact name "fridge.glb".');
-  }
-);
-
-// Raycaster for door clicking
+// Click interaction to toggle doors
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
@@ -298,32 +274,29 @@ renderer.domElement.addEventListener('pointerdown', (event) => {
   if (!hits.length) return;
 
   let clicked = hits[0].object;
-  let isTop = false;
-  let isBottom = false;
+  let hitTop = false;
+  let hitBottom = false;
 
   while (clicked && clicked !== fridge) {
     if (clicked === topDoor || clicked.name.toLowerCase().includes('top')) {
-      isTop = true;
+      hitTop = true;
       break;
     }
     if (clicked === bottomDoor || clicked.name.toLowerCase().includes('bottom')) {
-      isBottom = true;
+      hitBottom = true;
       break;
     }
     clicked = clicked.parent;
   }
 
-  if (isTop) {
+  if (hitTop) {
     topOpen = !topOpen;
-  } else if (isBottom) {
+  } else if (hitBottom) {
     bottomOpen = !bottomOpen;
   } else {
-    // If meshes do not have TopDoor/BottomDoor names, toggle top/bottom by click height
-    if (hits[0].point.y > 0) {
-      topOpen = !topOpen;
-    } else {
-      bottomOpen = !bottomOpen;
-    }
+    // If mesh parts are not named, toggle based on upper/lower click position
+    if (hits[0].point.y > 0) topOpen = !topOpen;
+    else bottomOpen = !bottomOpen;
   }
 });
 
@@ -333,19 +306,30 @@ function moveDoor(door, isOpen, openAngle) {
   door.rotation.y += (target - door.rotation.y) * 0.08;
 }
 
-function updateLayout() {
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-  if (!width || !height) return;
+function layoutScene() {
+  const width = container.clientWidth || (window.innerWidth * 0.5);
+  const height = container.clientHeight || 760;
 
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
   renderer.setSize(width, height);
-  camera.position.set(0, 0, 6.2);
+
+  if (!fridge) return;
+
+  if (window.innerWidth <= 900) {
+    // Mobile setup
+    camera.position.set(0, 0, 7.5);
+    fridge.position.set(0, -0.4, 0);
+    fridge.scale.set(1.4, 1.4, 1.4);
+  } else {
+    // Desktop setup: shifted slightly to the right (x: 0.6) and centered vertically (y: -0.3)
+    camera.position.set(0, 0, 7.2);
+    fridge.position.set(0.6, -0.3, 0);
+    fridge.scale.set(1.6, 1.6, 1.6);
+  }
 }
 
-window.addEventListener('resize', updateLayout);
-updateLayout();
+window.addEventListener('resize', layoutScene);
 
 function animate() {
   requestAnimationFrame(animate);
