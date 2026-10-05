@@ -1,205 +1,359 @@
 <!DOCTYPE html>
 <html lang="hr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VidiVraga</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VidiVraga</title>
+<style>
+:root {
+  --bg: #f5f1e8;
+  --text: #1f2430;
+  --muted: #353944;
+  --white: #ffffff;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+}
+body {
+  background:
+    radial-gradient(circle at 50% 70%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 32%),
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 25%),
+    var(--bg);
+}
+.page {
+  width: min(1280px, calc(100% - 80px));
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: 26px 0 24px;
+}
+.topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+.brand {
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+.desktop-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 34px;
+}
+.desktop-nav a {
+  text-decoration: none;
+  color: var(--text);
+  font-size: 13px;
+  position: relative;
+}
+.desktop-nav a.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -10px;
+  width: 100%;
+  height: 1px;
+  background: var(--text);
+}
+.icons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+}
+.icons button {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 28px;
+  cursor: pointer;
+}
+.hero {
+  min-height: calc(100vh - 90px);
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  align-items: center;
+  gap: 12px;
+}
+.copy {
+  max-width: 520px;
+  padding-left: 28px;
+}
+.copy h1 {
+  margin: 0 0 28px;
+  font-size: clamp(68px, 7vw, 96px);
+  line-height: 0.92;
+  letter-spacing: -0.07em;
+  max-width: 430px;
+}
+.copy p {
+  margin: 0 0 30px;
+  font-size: 16px;
+  line-height: 1.68;
+  max-width: 470px;
+  color: var(--muted);
+}
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 24px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.88);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+.visual {
+  min-height: 760px;
+  position: relative;
+}
+#scene {
+  width: 100%;
+  height: 760px;
+}
+#scene canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  outline: none;
+  cursor: pointer;
+}
+@media (max-width: 900px) {
+  .page { width: min(100%, calc(100% - 34px)); padding-top: 18px; }
+  .topbar { grid-template-columns: 1fr auto; }
+  .desktop-nav { display: none; }
+  .icons button:first-child { display: none; }
+  .hero { grid-template-columns: 1fr; gap: 0; min-height: auto; padding-top: 16px; }
+  .copy { padding-left: 0; text-align: center; max-width: none; }
+  .copy h1 { max-width: none; font-size: clamp(54px, 13vw, 82px); margin-bottom: 24px; }
+  .copy p { max-width: 100%; font-size: 15px; }
+  .cta { display: none; }
+  .visual { min-height: 560px; }
+  #scene { height: 560px; }
+}
+</style>
 
-  <style>
-    :root {
-      --bg: #ece7dc;
-      --text: #1b1f28;
-      --muted: #4e525c;
-      --white: #ffffff;
-    }
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      min-height: 100%;
-      background-color: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      overflow-x: hidden;
-    }
-    body {
-      background:
-        radial-gradient(ellipse 60% 40% at 65% 75%, rgba(255, 255, 255, 0.95) 0%, rgba(236, 231, 220, 0) 70%),
-        radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.4) 0%, rgba(236, 231, 220, 0) 40%),
-        var(--bg);
-    }
-    .page {
-      width: min(1340px, calc(100% - 70px));
-      margin: 0 auto;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      padding: 28px 0 20px;
-    }
-    .topbar {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-    }
-    .brand {
-      font-size: 26px;
-      font-weight: 800;
-      letter-spacing: -0.05em;
-    }
-    .desktop-nav {
-      display: flex;
-      align-items: center;
-      gap: 36px;
-    }
-    .desktop-nav a {
-      text-decoration: none;
-      color: var(--text);
-      font-size: 13.5px;
-      font-weight: 500;
-      position: relative;
-    }
-    .desktop-nav a.active::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      bottom: -6px;
-      width: 100%;
-      height: 1.5px;
-      background: var(--text);
-    }
-    .icons {
-      display: flex;
-      justify-content: flex-end;
-      gap: 18px;
-    }
-    .icons button {
-      border: 0;
-      background: transparent;
-      color: var(--text);
-      font-size: 22px;
-      cursor: pointer;
-    }
-    .hero {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 0.85fr 1.15fr;
-      align-items: center;
-      position: relative;
-    }
-    .copy {
-      max-width: 480px;
-      padding-left: 12px;
-      z-index: 2;
-    }
-    .copy h1 {
-      margin: 0 0 24px;
-      font-size: clamp(52px, 6vw, 84px);
-      line-height: 0.94;
-      font-weight: 800;
-      letter-spacing: -0.065em;
-    }
-    .copy p {
-      margin: 0 0 32px;
-      font-size: 15px;
-      line-height: 1.65;
-      color: var(--muted);
-      font-weight: 400;
-    }
-    .cta {
-      display: inline-flex;
-      align-items: center;
-      gap: 16px;
-      padding: 13px 26px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.92);
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
-      color: var(--text);
-      text-decoration: none;
-      font-size: 13.5px;
-      font-weight: 600;
-      transition: transform 0.15s ease;
-    }
-    .cta:hover { transform: translateY(-1px); }
-    .visual {
-      height: 100%;
-      min-height: 720px;
-      width: 100%;
-      position: relative;
-    }
-    #scene {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-    }
-    #scene canvas {
-      display: block;
-      width: 100% !important;
-      height: 100% !important;
-      cursor: pointer;
-    }
-
-    @media (max-width: 900px) {
-      .page { width: calc(100% - 36px); }
-      .topbar { grid-template-columns: 1fr auto; }
-      .desktop-nav { display: none; }
-      .hero {
-        grid-template-columns: 1fr;
-        padding-top: 30px;
-        text-align: center;
-      }
-      .copy {
-        padding-left: 0;
-        margin: 0 auto;
-      }
-      .copy h1 { font-size: clamp(44px, 11vw, 64px); }
-      .visual { min-height: 480px; }
-    }
-  </style>
-
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
-    }
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
   }
-  </script>
+}
+</script>
 </head>
 <body>
-  <div class="page">
-    <header class="topbar">
-      <div class="brand">vidivraga</div>
-      <nav class="desktop-nav">
-        <a class="active" href="#">Home</a>
-        <a href="#">O nama</a>
-        <a href="#">Projekti</a>
-        <a href="#">Blog</a>
-        <a href="#">Kontakt</a>
-      </nav>
-      <div class="icons">
-        <button aria-label="Search">🔍</button>
-        <button aria-label="Menu">☰</button>
-      </div>
-    </header>
+<div class="page">
+  <header class="topbar">
+    <div class="brand">vidivraga</div>
+    <nav class="desktop-nav">
+      <a class="active" href="#">Home</a>
+      <a href="#">O nama</a>
+      <a href="#">Projekti</a>
+      <a href="#">Blog</a>
+      <a href="#">Kontakt</a>
+    </nav>
+    <div class="icons">
+      <button aria-label="Search">⌕</button>
+      <button aria-label="Menu">☰</button>
+    </div>
+  </header>
 
-    <main class="hero">
-      <section class="copy">
-        <h1>svježina koja inspirira</h1>
-        <p>
-          Mi smo multidisciplinarni kreativni kolektiv posvećen održavanju
-          nezavisne kulturne scene besprijekorno svježom. Naša kreativnost nema rok
-          trajanja – uronite u promišljeno kuriran prostor gdje se spajaju
-          suvremeni dizajn, društvena teorija i vizualna umjetnost.
-        </p>
-        <a href="#" class="cta"><span>Saznaj više</span><span>→</span></a>
-      </section>
+  <main class="hero">
+    <section class="copy">
+      <h1>svježina koja inspirira</h1>
+      <p>
+        Mi smo multidisciplinarni kreativni kolektiv posvećen održavanju
+        nezavisne kulturne scene besprijekorno svježom. Naša kreativnost nema rok
+        trajanja – uronite u promišljeno kuriran prostor gdje se spajaju
+        suvremeni dizajn, društvena teorija i vizualna umjetnost. Pružamo optimalne uvjete za razvoj
+        inovativnih formata i održavamo apsolutno cool atmosferu u kojoj
+        nezavisna produkcija može slobodno disati.
+      </p>
+      <a href="#" class="cta"><span>Saznaj više</span><span>→</span></a>
+    </section>
 
-      <section class="visual">
-        <div id="scene"></div>
-      </section>
-    </main>
-  </div>
+    <section class="visual">
+      <div id="scene"></div>
+    </section>
+  </main>
+</div>
 
-  <script type="module">
-    import * as THREE from 'three';
-    import { GLTFLoader }
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const MODEL_URL = './fridge.glb';
+
+const container = document.getElementById('scene');
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(28, container.clientWidth / container.clientHeight, 0.1, 100);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(container.clientWidth, container.clientHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+container.appendChild(renderer.domElement);
+
+// Clean lighting setup matching the photo's studio reflections
+scene.add(new THREE.AmbientLight(0xffffff, 1.8));
+
+const key = new THREE.DirectionalLight(0xffffff, 2.4);
+key.position.set(4, 5, 6);
+scene.add(key);
+
+const softFill = new THREE.DirectionalLight(0xffeedd, 1.2);
+softFill.position.set(-4, 3, 4);
+scene.add(softFill);
+
+// Brushed stainless steel material matching the photo
+const brushedSteel = new THREE.MeshStandardMaterial({
+  color: 0xcccccc,
+  metalness: 0.85,
+  roughness: 0.28
+});
+
+let fridge = null;
+let topDoor = null;
+let bottomDoor = null;
+let topOpen = false;
+let bottomOpen = false;
+
+const loader = new GLTFLoader();
+
+loader.load(
+  MODEL_URL,
+  (gltf) => {
+    fridge = gltf.scene;
+
+    // Center geometry so scale/rotation work reliably
+    const box = new THREE.Box3().setFromObject(fridge);
+    const center = box.getCenter(new THREE.Vector3());
+    fridge.position.sub(center);
+
+    // Group wrapper to position to the right
+    const wrapper = new THREE.Group();
+    wrapper.add(fridge);
+    scene.add(wrapper);
+
+    fridge.traverse((child) => {
+      if (child.isMesh) {
+        // Apply stainless steel look to body & doors
+        child.material = brushedSteel;
+      }
+      const name = child.name.toLowerCase();
+      if (name.includes('top') && (name.includes('door') || name.includes('vrata'))) {
+        topDoor = child;
+      } else if (name.includes('bottom') && (name.includes('door') || name.includes('vrata'))) {
+        bottomDoor = child;
+      } else if (child.name === 'TopDoor') {
+        topDoor = child;
+      } else if (child.name === 'BottomDoor') {
+        bottomDoor = child;
+      }
+    });
+
+    // Auto-fit to viewport and offset slightly to the right
+    const size = box.getSize(new THREE.Vector3());
+    const maxAxis = Math.max(size.x, size.y, size.z);
+    const scale = 2.4 / (maxAxis || 1);
+    wrapper.scale.setScalar(scale);
+
+    // Shift to the right (x = 0.35) instead of dead-center
+    wrapper.position.set(0.35, -0.1, 0);
+
+    // Trigger an initial render
+    renderer.render(scene, camera);
+  },
+  undefined,
+  (error) => {
+    console.error('Error loading GLB:', error);
+    alert('Could not find fridge.glb. Ensure the file is pushed to GitHub in the same folder as index.html with the exact name "fridge.glb".');
+  }
+);
+
+// Raycaster for door clicking
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+renderer.domElement.addEventListener('pointerdown', (event) => {
+  if (!fridge) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObject(fridge, true);
+  if (!hits.length) return;
+
+  let clicked = hits[0].object;
+  let isTop = false;
+  let isBottom = false;
+
+  while (clicked && clicked !== fridge) {
+    if (clicked === topDoor || clicked.name.toLowerCase().includes('top')) {
+      isTop = true;
+      break;
+    }
+    if (clicked === bottomDoor || clicked.name.toLowerCase().includes('bottom')) {
+      isBottom = true;
+      break;
+    }
+    clicked = clicked.parent;
+  }
+
+  if (isTop) {
+    topOpen = !topOpen;
+  } else if (isBottom) {
+    bottomOpen = !bottomOpen;
+  } else {
+    // If meshes do not have TopDoor/BottomDoor names, toggle top/bottom by click height
+    if (hits[0].point.y > 0) {
+      topOpen = !topOpen;
+    } else {
+      bottomOpen = !bottomOpen;
+    }
+  }
+});
+
+function moveDoor(door, isOpen, openAngle) {
+  if (!door) return;
+  const target = isOpen ? openAngle : 0;
+  door.rotation.y += (target - door.rotation.y) * 0.08;
+}
+
+function updateLayout() {
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  if (!width || !height) return;
+
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+  camera.position.set(0, 0, 6.2);
+}
+
+window.addEventListener('resize', updateLayout);
+updateLayout();
+
+function animate() {
+  requestAnimationFrame(animate);
+  moveDoor(topDoor, topOpen, -1.85);
+  moveDoor(bottomDoor, bottomOpen, -1.75);
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
