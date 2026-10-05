@@ -1,265 +1,192 @@
 <!DOCTYPE html>
 <html lang="hr">
 <head>
-  <meta charset="UTF-8">
-  <title>VidiVraga</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vidi vraga</title>
   <style>
-    :root {
-      --bg: #f5f1e8;
-      --text: #1f2430;
-      --muted: #353944;
-      --white: #ffffff;
-    }
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0; min-height: 100%;
-      background: var(--bg); color: var(--text);
-      font-family: Arial, Helvetica, sans-serif;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
     body {
-      background:
-        radial-gradient(circle at 50% 70%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 32%),
-        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 25%),
-        var(--bg);
+      background: #f3f3f3;
+      color: #111;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
-    .page { width: min(1280px, calc(100% - 80px)); margin: 0 auto; min-height: 100vh; padding: 26px 0 24px; }
-    .topbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
-    .brand { font-size: 23px; font-weight: 700; letter-spacing: -0.04em; }
-    .desktop-nav { display: flex; align-items: center; justify-content: center; gap: 34px; }
-    .desktop-nav a { text-decoration: none; color: var(--text); font-size: 13px; position: relative; }
-    .desktop-nav a.active::after { content: ""; position: absolute; left: 0; bottom: -10px; width: 100%; height: 1px; background: var(--text); }
-    .icons { display: flex; justify-content: flex-end; gap: 16px; }
-    .icons button { border: 0; background: transparent; color: var(--text); font-size: 28px; cursor: pointer; }
-    .hero { min-height: calc(100vh - 90px); display: grid; grid-template-columns: 0.95fr 1.05fr; align-items: center; gap: 12px; }
-    .copy { max-width: 520px; padding-left: 28px; }
-    .copy h1 { margin: 0 0 28px; font-size: clamp(68px, 7vw, 96px); line-height: 0.92; letter-spacing: -0.07em; max-width: 430px; }
-    .copy p { margin: 0 0 30px; font-size: 16px; line-height: 1.68; max-width: 470px; color: var(--muted); }
-    .cta { display: inline-flex; align-items: center; gap: 18px; padding: 16px 24px; border-radius: 999px; background: rgba(255,255,255,0.88); color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600; }
-    .visual { min-height: 760px; position: relative; }
-    #scene { width: 100%; height: 760px; }
-    #scene canvas { display: block; width: 100% !important; height: 100% !important; outline: none; }
-    @media (max-width: 900px) {
-      .page { width: min(100%, calc(100% - 34px)); padding-top: 18px; }
-      .topbar { grid-template-columns: 1fr auto; }
-      .desktop-nav, .icons button:first-child { display: none; }
-      .hero { grid-template-columns: 1fr; gap: 0; min-height: auto; padding-top: 16px; }
-      .copy { padding-left: 0; text-align: center; max-width: none; }
-      .copy h1 { max-width: none; font-size: clamp(54px, 13vw, 82px); margin-bottom: 24px; }
-      .copy p { max-width: 100%; font-size: 15px; }
-      .cta { display: none; }
-      .visual { min-height: 560px; }
-      #scene { height: 560px; }
+    .page {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .topbar {
+      padding: 24px 40px;
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .hero {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      padding: 0 40px 40px 40px;
+      gap: 32px;
+    }
+    .copy {
+      max-width: 520px;
+    }
+    .copy h1 {
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      line-height: 1.05;
+      margin-bottom: 24px;
+      letter-spacing: -0.03em;
+    }
+    .copy p {
+      font-size: 1.15rem;
+      line-height: 1.5;
+      color: #555;
+    }
+    .visual {
+      width: 100%;
+      height: 75vh;
+      min-height: 480px;
+      position: relative;
+    }
+    #scene {
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+    #scene:active {
+      cursor: grabbing;
+    }
+    #scene canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+      outline: none;
+    }
+    @media (max-width: 860px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+      .visual {
+        height: 55vh;
+      }
     }
   </style>
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
-    }
-  }
-  </script>
 </head>
 <body>
   <div class="page">
-    <header class="topbar">
-      <div class="brand">vidivraga</div>
-      <nav class="desktop-nav">
-        <a class="active" href="#">Home</a>
-        <a href="#">O nama</a>
-        <a href="#">Projekti</a>
-        <a href="#">Blog</a>
-        <a href="#">Kontakt</a>
-      </nav>
-      <div class="icons">
-        <button aria-label="Search">⌕</button>
-        <button aria-label="Menu">☰</button>
-      </div>
-    </header>
+    <header class="topbar">Vidi vraga</header>
     <main class="hero">
       <section class="copy">
-        <h1>svježina koja inspirira</h1>
-        <p>
-          Mi smo multidisciplinarni kreativni kolektiv posvećen održavanju
-          nezavisne kulturne scene besprijekorno svježom. Naša kreativnost nema rok
-          trajanja. Uronite u promišljeno kuriran prostor gdje se spajaju
-          suvremeni dizajn, društvena teorija i vizualna umjetnost.
-        </p>
-        <a href="#" class="cta"><span>Saznaj više</span><span>→</span></a>
+        <h1>Pametni hladnjak novog doba.</h1>
+        <p>Interaktivni 3D prikaz. Kliknite i povucite za rotaciju.</p>
       </section>
-      <section class="visual"><div id="scene"></div></section>
+      <section class="visual">
+        <div id="scene"></div>
+      </section>
     </main>
   </div>
-<script type="module">
-  import * as THREE from 'three';
-  import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-  import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-  const MODEL_URL = 'https://nevaevac.github.io/vidivraga-web/fridge.glb?v=20';
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js';
+    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/loaders/GLTFLoader.js';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/controls/OrbitControls.js';
 
-  const container = document.getElementById('scene');
-  const scene = new THREE.Scene();
+    const container = document.getElementById('scene');
+    const scene = new THREE.Scene();
 
-  const camera = new THREE.PerspectiveCamera(
-    20,
-    container.clientWidth / container.clientHeight,
-    0.1,
-    2000
-  );
+    const camera = new THREE.PerspectiveCamera(
+      45,
+      container.clientWidth / container.clientHeight,
+      0.1,
+      1000
+    );
+    camera.position.set(0, 0, 5);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
-  container.appendChild(renderer.domElement);
-
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xd9d1c7, 2.2));
-
-  const key = new THREE.DirectionalLight(0xffffff, 2.8);
-  key.position.set(5, 8, 9);
-  scene.add(key);
-
-  const fill = new THREE.DirectionalLight(0xffffff, 1.2);
-  fill.position.set(-6, 2, 6);
-  scene.add(fill);
-
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-
-  let fridge = null;
-  let topDoor = null;
-  let bottomDoor = null;
-  let topOpen = false;
-  let bottomOpen = false;
-
-  const steel = new THREE.MeshPhysicalMaterial({
-    color: 0xc7c7c5,
-    metalness: 0.9,
-    roughness: 0.2,
-    envMapIntensity: 1.7,
-    clearcoat: 0.06,
-    clearcoatRoughness: 0.25
-  });
-
-  function fitModelToView(object) {
-    object.updateMatrixWorld(true);
-
-    const box = new THREE.Box3().setFromObject(object);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const fov = camera.fov * (Math.PI / 180);
-    const cameraZ = Math.abs((maxDim / 2) / Math.tan(fov / 2)) * 1.35;
-
-    object.position.sub(center);
-    object.updateMatrixWorld(true);
-
-    camera.position.set(0.9, 0, cameraZ);
-    camera.near = Math.max(0.1, cameraZ / 100);
-    camera.far = cameraZ * 100;
-    camera.updateProjectionMatrix();
-    camera.lookAt(0.2, 0, 0);
-  }
-
-  function findNamedObject(root, name) {
-    let found = null;
-    root.traverse((obj) => {
-      if (!found && obj.name && obj.name.toLowerCase().includes(name.toLowerCase())) {
-        found = obj;
-      }
-    });
-    return found;
-  }
-
-const loader = new GLTFLoader();
-loader.load(
-  'fridge.glb?v=20',
-  (gltf) => {
-    const fridge = gltf.scene;
-    scene.add(fridge);
-
-    // Apply a clear neutral material to verify visibility
-    fridge.traverse((child) => {
-      if (child.isMesh) {
-        child.material = new THREE.MeshStandardMaterial({
-          color: 0xd9dfe5,
-          metalness: 0.55,
-          roughness: 0.32
-        });
-      }
-    });
-
-    // Calculate actual dimensions exported from Blender
-    const box = new THREE.Box3().setFromObject(fridge);
-    const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
-
-    // Print values to the console
-    console.log('FRIDGE LOADED', { size, center });
-
-    // Center model precisely at origin (0, 0, 0)
-    fridge.position.sub(center);
-
-    // Adjust camera distance according to the model's actual size
-    const maxDim = Math.max(size.x, size.y, size.z);
-    camera.position.set(0, 0, maxDim * 2.5 || 5);
-    camera.lookAt(0, 0, 0);
-    if (typeof controls !== 'undefined' && controls) {
-      controls.target.set(0, 0, 0);
-      controls.update();
-    }
-  },
-  undefined,
-  (error) => {
-    console.error('Error loading GLB:', error);
-  }
-);
-
-  const raycaster = new THREE.Raycaster();
-  const pointer = new THREE.Vector2();
-
-  renderer.domElement.addEventListener('pointerdown', (event) => {
-    if (!fridge) return;
-
-    const rect = renderer.domElement.getBoundingClientRect();
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    raycaster.setFromCamera(pointer, camera);
-    const hits = raycaster.intersectObject(fridge, true);
-    if (!hits.length) return;
-
-    const hitPointLocal = fridge.worldToLocal(hits[0].point.clone());
-
-    if (hitPointLocal.y > 0) topOpen = !topOpen;
-    else bottomOpen = !bottomOpen;
-  });
-
-  function animateDoor(door, open) {
-    if (!door) return;
-    const target = open ? -1.55 : 0;
-    door.rotation.y += (target - door.rotation.y) * 0.1;
-  }
-
-  function resize() {
-    camera.aspect = container.clientWidth / container.clientHeight;
-    camera.updateProjectionMatrix();
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    container.appendChild(renderer.domElement);
 
-    if (fridge) fitModelToView(fridge);
-  }
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
 
-  window.addEventListener('resize', resize);
+    // Lighting setup
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
+    scene.add(ambientLight);
 
-  function tick() {
-    requestAnimationFrame(tick);
-    animateDoor(topDoor, topOpen);
-    animateDoor(bottomDoor, bottomOpen);
-    renderer.render(scene, camera);
-  }
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 2.5);
+    dirLight1.position.set(5, 10, 7);
+    scene.add(dirLight1);
 
-  tick();
-</script>
+    const dirLight2 = new THREE.DirectionalLight(0xddeeff, 1.5);
+    dirLight2.position.set(-5, 2, -5);
+    scene.add(dirLight2);
 
+    // GLTF Loading and auto-framing
+    const loader = new GLTFLoader();
+    loader.load(
+      'fridge.glb?v=' + Date.now(),
+      (gltf) => {
+        const fridge = gltf.scene;
+
+        // Apply clean metallic finish across the mesh
+        fridge.traverse((child) => {
+          if (child.isMesh) {
+            child.material = new THREE.MeshStandardMaterial({
+              color: 0xd0d5db,
+              metalness: 0.65,
+              roughness: 0.28
+            });
+          }
+        });
+
+        // Compute bounds to center and frame automatically
+        const box = new THREE.Box3().setFromObject(fridge);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+
+        fridge.position.sub(center);
+        scene.add(fridge);
+
+        const maxDim = Math.max(size.x, size.y, size.z);
+        camera.position.set(0, 0, maxDim * 2.3);
+        camera.lookAt(0, 0, 0);
+
+        controls.target.set(0, 0, 0);
+        controls.update();
+
+        console.log('✅ FRIDGE RENDERED:', { size, center });
+      },
+      undefined,
+      (error) => {
+        console.error('Error loading GLTF:', error);
+      }
+    );
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      if (!container.clientWidth || !container.clientHeight) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+  </script>
+</body>
+</html>
